@@ -1,0 +1,43 @@
+# General OS and Editor files
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Python / FastAPI Server
+# -----------------------------
+# Virtual environment folder
+server/venv/
+server/.venv/
+
+# Python cache
+server/__pycache__/
+server/**/*.pyc
+
+# SQLite Database
+# It's generally good practice to not commit the database file itself,
+# especially during development.
+server/*.db
+server/*.db-journal
+
+# Node.js / Vite / React Client
+# -----------------------------
+# Dependencies
+client/node_modules/
+
+# Build output
+client/dist/
+
+# Logs
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+
+# Local environment variables
+client/.env.local
+client/.env.*.local
+
+# IDE and Editor directories
+.idea
+.vscode
