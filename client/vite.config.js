@@ -4,4 +4,8 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  esbuild: {
+    // Disable React strict mode double-mounting in development
+    drop: process.env.NODE_ENV === 'development' ? [] : ['console', 'debugger']
+  }
 })

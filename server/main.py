@@ -9,7 +9,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from db import init_db, load_state_from_db, initialize_default_world, db_write, db_read
-from fauna import FaunaManager, TICK_RATE # Import the new manager and TICK_RATE
+from fauna import FaunaManager, TICK_RATE, FAUNA_AGE_STAGES # Import the new manager, TICK_RATE, and FAUNA_AGE_STAGES
 
 # --- FastAPI App and Game State Initialization ---
 app = FastAPI()
@@ -37,14 +37,24 @@ class ConnectionManager:
             return player_id
         return None
     async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
+        disconnected_connections = []
+        for connection in self.active_connections[:]:  # Use slice to avoid modification during iteration
+            try:
+                await connection.send_text(message)
+            except Exception as e:
+                print(f"Error sending message to connection: {e}")
+                disconnected_connections.append(connection)
+        
+        # Clean up disconnected connections
+        for connection in disconnected_connections:
+            self.disconnect(connection)
 
 manager = ConnectionManager()
 # Create an instance of the FaunaManager
 fauna_manager = FaunaManager(world_state, manager.broadcast)
 
 async def game_loop():
+    """The main server-side game loop."""
     while True:
         await asyncio.sleep(TICK_RATE)
         
@@ -68,6 +78,7 @@ async def game_loop():
 
 @app.on_event("startup")
 async def startup_event_full():
+    """On server startup, create the main game loop task."""
     asyncio.create_task(game_loop())
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])

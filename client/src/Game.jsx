@@ -243,23 +243,65 @@ class MainScene extends Phaser.Scene {
   }
 }
 
-export const Game = ({ ws, selectedAction }) => {
+export const Game = ({ ws, selectedAction, messageQueue }) => {
   const phaserGameRef = useRef(null);
+  
   useEffect(() => {
-    if (phaserGameRef.current) phaserGameRef.current.registry.set('selectedAction', selectedAction);
+    if (phaserGameRef.current) {
+        phaserGameRef.current.registry.set('selectedAction', selectedAction);
+    }
   }, [selectedAction]);
+
   useEffect(() => {
-    const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'container', physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false }, }, scene: [MainScene] };
-    if (!phaserGameRef.current && ws.current) {
-      const messageQueue = [];
-      ws.current.onmessage = (event) => { messageQueue.push(JSON.parse(event.data)); };
+    const config = {
+      type: Phaser.AUTO,
+      width: 800,
+      height: 600,
+      parent: 'container',
+      physics: {
+        default: 'arcade',
+        arcade: {
+          gravity: { y: 0 },
+          debug: false
+        }
+      },
+      scene: [MainScene]
+    };
+
+    // Create the game if it doesn't exist
+    if (!phaserGameRef.current) {
+      console.log('[GAME] Creating Phaser game instance');
       const game = new Phaser.Game(config);
-      game.registry.set('ws', ws.current);
-      game.registry.set('messageQueue', messageQueue);
+      
+      // Pass the WebSocket and message queue from App.jsx to Phaser
+      if (ws.current) {
+        game.registry.set('ws', ws.current);
+      }
+      game.registry.set('messageQueue', messageQueue.current);
       game.registry.set('selectedAction', selectedAction);
       phaserGameRef.current = game;
     }
-    return () => { if (phaserGameRef.current) { phaserGameRef.current.destroy(true); phaserGameRef.current = null; }};
-  }, [ws]);
-  return <div id="container" style={{ cursor: 'auto' }} />;
+
+    return () => {
+      console.log('[GAME] Cleanup called');
+      if (phaserGameRef.current) {
+        console.log('[GAME] Destroying Phaser game instance');
+        phaserGameRef.current.destroy(true);
+        phaserGameRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update game registry when props change
+  useEffect(() => {
+    if (phaserGameRef.current) {
+      if (ws.current) {
+        phaserGameRef.current.registry.set('ws', ws.current);
+      }
+      phaserGameRef.current.registry.set('messageQueue', messageQueue.current);
+    }
+  }, [ws, messageQueue]);
+
+  console.log('[GAME] Rendering container');
+  return <div id="container" style={{ cursor: 'auto', width: '800px', height: '600px', border: '1px solid #ccc' }} />;
 };

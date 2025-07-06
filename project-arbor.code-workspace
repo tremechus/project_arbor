@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "github.copilot.chat.defaultContext": [
+      "project_context.md"
+    ],
+    "github.copilot.chat.workspaceContext": true,
+    "github.copilot.chat.includeProjectContext": true
+  }
+}

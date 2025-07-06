@@ -7,7 +7,8 @@ from db import db_write
 
 # --- Fauna Configuration ---
 FAUNA_AGE_STAGES = {"Infant": 120, "Young": 300, "Adult": 900, "Elderly": 0}
-ADULT_SPAWN_CHANCE = 0.05
+ADULT_SPAWN_CHANCE = 0.50 
+REPRODUCTION_COOLDOWN = 60 # Cooldown in seconds (1 minute)
 MAX_OFFSPRING = 3
 ELDERLY_MIN_LIFESPAN = 60
 ELDERLY_MAX_LIFESPAN = 300
@@ -19,22 +20,12 @@ class FaunaManager:
     """Manages the lifecycle and AI for all fauna in the world."""
 
     def __init__(self, world_state, broadcast_callback):
-        """
-        Initializes the FaunaManager.
-        
-        Args:
-            world_state: The main world_state dictionary.
-            broadcast_callback: The async function to broadcast messages to clients.
-        """
         self.world_state = world_state
         self.broadcast = broadcast_callback
 
     async def update_fauna(self):
         """
-        The main update logic for all fauna, called by the server's game loop.
-        
-        Returns:
-            A tuple containing lists of new fauna, removed fauna, and removed food.
+        The main update logic for all fauna, called once per game loop tick.
         """
         current_time = time.time()
         fauna_to_add = []
@@ -97,13 +88,23 @@ class FaunaManager:
                     await self.broadcast(json.dumps({"type": "fauna_moved", "fauna_id": fauna_id, "data": fauna}))
 
             # --- Reproduction & Death ---
-            if fauna["stage"] == "Adult" and fauna["offspring_count"] < MAX_OFFSPRING and random.random() < ADULT_SPAWN_CHANCE:
-                fauna["offspring_count"] += 1
-                new_id = f"dragon_{uuid.uuid4().hex[:6]}"
-                new_data = {"x": fauna["x"], "y": fauna["y"], "kind": "dragon", "age_seconds": 0, "stage": "Infant", "is_dead": False, "time_of_death": None, "offspring_count": 0, "death_timer": None, "goal": None}
-                fauna_to_add.append((new_id, new_data))
-                db_write("INSERT INTO fauna (id, kind, x, y, age_seconds, stage, is_dead, offspring_count, goal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (new_id, new_data["kind"], new_data["x"], new_data["y"], 0, "Infant", False, 0, None))
-                db_write("UPDATE fauna SET offspring_count = ? WHERE id = ?", (fauna["offspring_count"], fauna_id))
+            if fauna["stage"] == "Adult" and fauna["offspring_count"] < MAX_OFFSPRING:
+                last_attempt = fauna.get("last_repro_attempt", 0)
+                if current_time > last_attempt + REPRODUCTION_COOLDOWN:
+                    fauna["last_repro_attempt"] = current_time
+                    if random.random() < ADULT_SPAWN_CHANCE:
+                        fauna["offspring_count"] += 1
+                        # Generate a unique ID with timestamp to avoid collisions
+                        new_id = f"dragon_{int(time.time())}_{uuid.uuid4().hex[:8]}"
+                        new_data = {"x": fauna["x"], "y": fauna["y"], "kind": "dragon", "age_seconds": 0, "stage": "Infant", "is_dead": False, "time_of_death": None, "offspring_count": 0, "death_timer": None, "goal": None}
+                        fauna_to_add.append((new_id, new_data))
+                        try:
+                            db_write("INSERT INTO fauna (id, kind, x, y, age_seconds, stage, is_dead, offspring_count, goal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (new_id, new_data["kind"], new_data["x"], new_data["y"], 0, "Infant", False, 0, None))
+                            db_write("UPDATE fauna SET offspring_count = ? WHERE id = ?", (fauna["offspring_count"], fauna_id))
+                        except Exception as e:
+                            print(f"Database error while spawning fauna: {e}")
+                            # Remove from fauna_to_add if database write failed
+                            fauna_to_add = [item for item in fauna_to_add if item[0] != new_id]
             
             if fauna["stage"] == "Elderly" and current_time > fauna.get("death_timer", float('inf')):
                 fauna["is_dead"], fauna["time_of_death"] = True, current_time

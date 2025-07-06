@@ -40,4 +40,6 @@ client/.env.*.local
 
 # IDE and Editor directories
 .idea
-.vscode
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
