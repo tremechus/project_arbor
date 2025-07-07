@@ -85,6 +85,18 @@ jobs:
         with:
           # Upload dist directory
           path: './client/dist'
+          
+      - name: List uploaded artifact contents
+        run: |
+          echo "🗂️ Contents being uploaded to GitHub Pages:"
+          cd client
+          find dist -type f | sort
+          echo ""
+          echo "📊 Total files: $(find dist -type f | wc -l)"
+          echo "🔍 Key files check:"
+          echo "- index.html: $(if [ -f dist/index.html ]; then echo '✅ Found'; else echo '❌ Missing'; fi)"
+          echo "- JS files: $(find dist -name '*.js' | wc -l) files"
+          echo "- CSS files: $(find dist -name '*.css' | wc -l) files"
 
   # Deployment job
   deploy:
@@ -100,8 +112,27 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
         
-      - name: Output deployment URL
+      - name: Verify deployment and test URLs
         run: |
           echo "🚀 Deployment successful!"
           echo "📍 Site URL: ${{ steps.deployment.outputs.page_url }}"
-          echo "🔗 Visit: https://tremechus.github.io/project_arbor/"
+          echo "🔗 Main App: https://tremechus.github.io/project_arbor/"
+          echo "🧪 Debug Page: https://tremechus.github.io/project_arbor/debug.html"
+          echo "📋 Test Page: https://tremechus.github.io/project_arbor/test.html"
+          
+          echo ""
+          echo "🔍 Testing key URLs (this may take a moment for DNS propagation):"
+          
+          # Test main page
+          if curl -s -o /dev/null -w "%{http_code}" "https://tremechus.github.io/project_arbor/" | grep -q "200"; then
+            echo "✅ Main page: accessible"
+          else
+            echo "❌ Main page: not accessible"
+          fi
+          
+          # Test debug page  
+          if curl -s -o /dev/null -w "%{http_code}" "https://tremechus.github.io/project_arbor/debug.html" | grep -q "200"; then
+            echo "✅ Debug page: accessible"
+          else
+            echo "❌ Debug page: not accessible"
+          fi

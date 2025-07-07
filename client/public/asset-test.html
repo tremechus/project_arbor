@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Asset Path Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Asset Path Debugging</h1>
+    
+    <div class="test">
+        <h3>Current Location Info:</h3>
+        <p>Base URL: <span id="baseUrl"></span></p>
+        <p>Full URL: <span id="fullUrl"></span></p>
+        <p>Path: <span id="path"></span></p>
+    </div>
+    
+    <div class="test">
+        <h3>🔗 Test Asset Links:</h3>
+        <p><a href="/project-arbor/assets/" target="_blank">Assets Directory</a></p>
+        <p><a href="/project-arbor/vite.svg" target="_blank">Vite SVG</a></p>
+        <p><a href="/project-arbor/player.png" target="_blank">Player Image</a></p>
+    </div>
+    
+    <div class="test">
+        <h3>📊 Asset Loading Tests:</h3>
+        <div id="assetTests">Testing...</div>
+    </div>
+
+    <script>
+        // Display location info
+        document.getElementById('baseUrl').textContent = window.location.origin;
+        document.getElementById('fullUrl').textContent = window.location.href;
+        document.getElementById('path').textContent = window.location.pathname;
+        
+        // Test asset loading
+        const assetsToTest = [
+            '/project-arbor/vite.svg',
+            '/project-arbor/player.png',
+            '/project-arbor/debug.html'
+        ];
+        
+        const testContainer = document.getElementById('assetTests');
+        testContainer.innerHTML = '';
+        
+        assetsToTest.forEach(assetPath => {
+            const testDiv = document.createElement('div');
+            testDiv.innerHTML = `Testing ${assetPath}... `;
+            
+            fetch(assetPath)
+                .then(response => {
+                    if (response.ok) {
+                        testDiv.innerHTML += `✅ ${response.status}`;
+                        testDiv.className = 'success';
+                    } else {
+                        testDiv.innerHTML += `❌ ${response.status}`;
+                        testDiv.className = 'error';
+                    }
+                })
+                .catch(error => {
+                    testDiv.innerHTML += `❌ Error: ${error.message}`;
+                    testDiv.className = 'error';
+                });
+                
+            testContainer.appendChild(testDiv);
+        });
+        
+        console.log('Asset path test page loaded');
+        console.log('Location:', window.location);
+    </script>
+</body>
+</html>
