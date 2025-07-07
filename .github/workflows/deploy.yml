@@ -41,20 +41,41 @@ jobs:
       - name: Build
         run: |
           cd client
+          echo "🔨 Starting Vite build..."
           npm run build
         env:
           NODE_ENV: production
           
-      - name: Verify build output
+      - name: Comprehensive build verification
         run: |
           cd client
+          echo "📁 Checking if dist directory exists..."
           if [ ! -d "dist" ]; then
-            echo "Error: dist directory was not created"
+            echo "❌ Error: dist directory was not created"
             exit 1
           fi
-          echo "Build output:"
-          ls -la dist/
-          echo "Build completed successfully!"
+          
+          echo "📂 Build output structure:"
+          find dist -type f -name "*.html" -o -name "*.js" -o -name "*.css" | head -20
+          
+          echo ""
+          echo "📄 Contents of index.html:"
+          cat dist/index.html
+          
+          echo ""
+          echo "📊 File sizes:"
+          ls -lah dist/
+          
+          echo ""
+          echo "🔍 JavaScript bundles:"
+          find dist -name "*.js" -exec ls -lah {} \;
+          
+          echo ""
+          echo "🎨 CSS files:"
+          find dist -name "*.css" -exec ls -lah {} \;
+          
+          echo ""
+          echo "✅ Build verification completed!"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
