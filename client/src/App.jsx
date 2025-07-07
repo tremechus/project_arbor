@@ -15,6 +15,8 @@ import './Disconnected.css';
 const MAX_RECONNECT_ATTEMPTS = 3;
 
 function App() {
+  console.log('[APP] App component initializing...');
+  
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('playerName') || null);
   const [selectedAction, setSelectedAction] = useState('till');
   const [isPermanentlyDisconnected, setIsPermanentlyDisconnected] = useState(false);
@@ -24,6 +26,18 @@ function App() {
   const messageQueue = useRef([]); // Create the message queue here
   const reconnectAttempts = useRef(0);
   const isMounted = useRef(true);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[APP] App component mounted successfully');
+    console.log('[APP] Initial state:', {
+      playerName,
+      selectedAction,
+      isLoggedIn,
+      isConnecting,
+      isPermanentlyDisconnected
+    });
+  }, []);
 
   const connect = () => {
     if (!playerName || isConnecting) return;
@@ -176,6 +190,10 @@ function App() {
 
   return (
     <div className="App">
+      {/* Debug info for production deployment */}
+      <div style={{ position: 'fixed', top: 0, right: 0, background: 'rgba(0,0,0,0.8)', color: 'white', padding: '5px', fontSize: '10px', zIndex: 9999 }}>
+        App Loaded ✅ | Player: {playerName || 'None'} | Connected: {isLoggedIn ? 'Yes' : 'No'}
+      </div>
       {renderContent()}
     </div>
   );
